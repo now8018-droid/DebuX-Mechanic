@@ -84,7 +84,7 @@ function AddMods()
                 })
         else
             local modCount = GetNumVehicleMods(playerVeh, Config.DetailMods[k].modtype)
-            if modCount > 1 then
+            if modCount > 0 then
                 SendNUIMessage({
                     action = "addMods",
                     label = Config.ModsList[k].name ,
