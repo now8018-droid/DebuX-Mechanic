@@ -1,13 +1,18 @@
 
 Config = {}
 
-Config.Mysql = "mysql-async" -- mysql-async, ghmattimysql, oxmysql
-Config.Money = "bank" -- cash or bank
+Config.Mysql = "oxmysql" -- oxmysql
+Config.Framework = "esx"
+Config.Money = "cash" -- cash or bank
 Config.Distance = 5 -- Acces Menu Distance
 Config.UsingFuel = "default" -- legacyfuel , bakitelli_fuel, default, other
 -- > If you choose the other one, set it from shared > client.lua
 Config.SoundEffect = true 
 Config.AutoSQLSave = false 
+Config.VehicleTable = "owned_vehicles"
+Config.VehicleColumn = "vehicle"
+Config.VehiclePlateColumn = "plate"
+Config.VehicleOwnerColumn = "owner"
 
 Config.Mechanics = {
 	["Bennys"] = {

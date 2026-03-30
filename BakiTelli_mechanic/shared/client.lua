@@ -1,32 +1,32 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+local ESX = exports["es_extended"]:getSharedObject()
 PlayerJob = false
 local logged = false 
 
 CreateThread(function()
-	PlayerData = QBCore.Functions.GetPlayerData()
-	if PlayerData then
-		PlayerData = PlayerData
-    PlayerJob = PlayerData.job
+  while ESX.GetPlayerData().job == nil do
+    Wait(250)
+  end
+  local playerData = ESX.GetPlayerData()
+  if playerData then
+    PlayerJob = playerData.job
     logged = true
-	end
+  end
 end)
 
-
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
-AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-  QBCore.Functions.GetPlayerData(function(PlayerData)
-    PlayerJob = PlayerData.job
-  end)
+RegisterNetEvent("esx:playerLoaded")
+AddEventHandler("esx:playerLoaded", function(xPlayer)
+  PlayerJob = xPlayer.job
+  logged = true
 end)
 
-RegisterNetEvent('QBCore:Client:OnJobUpdate')
-AddEventHandler('QBCore:Client:OnJobUpdate', function(JobInfo)
-    PlayerJob = JobInfo
-    logged = true
+RegisterNetEvent("esx:setJob")
+AddEventHandler("esx:setJob", function(job)
+  PlayerJob = job
+  logged = true
 end)
 
 function getvehiclepropx(veh)
-  return QBCore.Functions.GetVehicleProperties(veh)
+  return ESX.Game.GetVehicleProperties(veh)
 end
 
 function DrawText3D(x,y,z, text)
@@ -47,7 +47,14 @@ function DrawText3D(x,y,z, text)
   end
 
   function notify(text)
-    TriggerEvent('QBCore:Notify',text)
+    if GetResourceState("esx_notify") == "started" then
+      ESX.ShowNotification(text)
+      return
+    end
+
+    BeginTextCommandThefeedPost("STRING")
+    AddTextComponentSubstringPlayerName(tostring(text))
+    EndTextCommandThefeedPostTicker(false, false)
   end
 
   function getfuel(vehicle)

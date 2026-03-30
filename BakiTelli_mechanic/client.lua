@@ -13,6 +13,69 @@ local oldtint = 1
 local oldsmoke = 1
 local SellectItemPrice = 0
 local typer = "main"
+local DynamicModPrefix = "dynmod:"
+
+local DynamicBaseMenus = {
+    RepairMenu = true,
+    Colors = true,
+    Plates = true,
+    Neons = true,
+    WindowTint = true,
+    Wheels = true,
+}
+
+local DynamicToggleMods = {
+    [18] = true, -- Turbo
+    [22] = true, -- Xenon
+}
+
+local UpgradeModTypes = {11, 13, 12, 15, 18}
+
+local DynamicModMeta = {
+    [11] = { label = "Engine (เครื่องยนต์)", category = "Upgrade", img = "./imgs/engine.png" },
+    [12] = { label = "Brakes (เบรก)", category = "Upgrade", img = "./imgs/brakes.png" },
+    [13] = { label = "Transmission (เกียร์)", category = "Upgrade", img = "./imgs/transmission.png" },
+    [15] = { label = "Suspension (ความสูง)", category = "Upgrade", img = "./imgs/suspension.png" },
+    [18] = { label = "Turbo (เทอร์โบ)", category = "Upgrade", img = "./imgs/engineblock.png" },
+    [22] = { label = "Xenon", category = "Body Part", img = "./imgs/frontbumper.png" },
+    [23] = { label = "Front Wheels", category = "Body Part", img = "./imgs/wheel.png" },
+    [24] = { label = "Back Wheels", category = "Body Part", img = "./imgs/wheel.png" },
+}
+
+local function IsUpgradeMod(modType)
+    for _, upgradeModType in ipairs(UpgradeModTypes) do
+        if upgradeModType == modType then
+            return true
+        end
+    end
+    return false
+end
+
+local function GetDynamicModeType(modeId)
+    if type(modeId) ~= "string" then
+        return nil
+    end
+    local modType = string.match(modeId, "^" .. DynamicModPrefix .. "(%d+)$")
+    return modType and tonumber(modType) or nil
+end
+
+local function GetDynamicModDisplay(modType)
+    local meta = DynamicModMeta[modType]
+    if meta then
+        return meta.label, meta.img, meta.category
+    end
+    return ("Mod Type %d"):format(modType), "./imgs/repair.png", "Body Part"
+end
+
+local function GetDynamicPrice(modType, modIndex, isToggle)
+    if isToggle then
+        return 1250 + (modType * 25)
+    end
+    if modIndex < 0 then
+        return 0
+    end
+    return 750 + ((modIndex + 1) * 350) + (modType * 20)
+end
 
 Citizen.CreateThread(function()
     AddMechanicsBlips()
@@ -75,21 +138,41 @@ function AddMods()
     local playerVeh = GetVehiclePedIsIn(playerPed, false)
     SetVehicleModKit(playerVeh,0)
     for k, v in pairs(Config.ModsList) do
-        if Config.DetailMods[k] == nil then 
+        if DynamicBaseMenus[k] then
+            SendNUIMessage({
+                action = "addMods",
+                label = v.name,
+                img = v.img,
+                id = k,
+            })
+        end
+    end
+
+    -- Upgrade category (requested fixed group ordering, but still native-detected availability)
+    for _, modType in ipairs(UpgradeModTypes) do
+        local modCount = GetNumVehicleMods(playerVeh, modType)
+        if modCount > 0 or DynamicToggleMods[modType] then
+            local modLabel, modImg, modCategory = GetDynamicModDisplay(modType)
+            SendNUIMessage({
+                action = "addMods",
+                label = ("[%s] %s"):format(modCategory, modLabel),
+                img = modImg,
+                id = DynamicModPrefix .. modType,
+            })
+        end
+    end
+
+    -- Body Part category (all remaining supported native mod types 0-49)
+    for modType = 0, 49 do
+        if not IsUpgradeMod(modType) then
+            local modCount = GetNumVehicleMods(playerVeh, modType)
+            if modCount > 0 or DynamicToggleMods[modType] then
+                local modLabel, modImg, modCategory = GetDynamicModDisplay(modType)
                 SendNUIMessage({
                     action = "addMods",
-                    label = v.name,
-                    img = v.img,
-                    id = k,
-                })
-        else
-            local modCount = GetNumVehicleMods(playerVeh, Config.DetailMods[k].modtype)
-            if modCount > 1 then
-                SendNUIMessage({
-                    action = "addMods",
-                    label = Config.ModsList[k].name ,
-                    img = Config.ModsList[k].img,
-                    id = k,
+                    label = ("[%s] %s"):format(modCategory, modLabel),
+                    img = modImg,
+                    id = DynamicModPrefix .. modType,
                 })
             end
         end
@@ -186,6 +269,54 @@ RegisterNUICallback("SellectId", function (data)
         PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", 1)
     end
     DefaultCar()
+    local playerVeh = GetVehiclePedIsIn(PlayerPedId(), false)
+    SetVehicleModKit(playerVeh, 0)
+    local dynamicModType = GetDynamicModeType(id)
+    if dynamicModType ~= nil then
+        local modLabel, modImg = GetDynamicModDisplay(dynamicModType)
+        local modCount = GetNumVehicleMods(playerVeh, dynamicModType)
+        if DynamicToggleMods[dynamicModType] then
+            local currentState = IsToggleModOn(playerVeh, dynamicModType)
+            SendNUIMessage({
+                action = "addItems",
+                label = modLabel .. " Off",
+                img = modImg,
+                price = GetDynamicPrice(dynamicModType, 0, true),
+                id = 0,
+                select = not currentState,
+            })
+            SendNUIMessage({
+                action = "addItems",
+                label = modLabel .. " On",
+                img = modImg,
+                price = GetDynamicPrice(dynamicModType, 1, true),
+                id = 1,
+                select = currentState,
+            })
+            return
+        end
+
+        SendNUIMessage({
+            action = "addItems",
+            label = modLabel .. " " .. Config.Langs["Stock"],
+            img = modImg,
+            price = GetDynamicPrice(dynamicModType, -1, false),
+            id = -1,
+            select = GetModStatus(dynamicModType) == -1,
+        })
+        for modIndex = 0, modCount - 1 do
+            SendNUIMessage({
+                action = "addItems",
+                label = modLabel .. " " .. (modIndex + 1),
+                img = modImg,
+                price = GetDynamicPrice(dynamicModType, modIndex, false),
+                id = modIndex,
+                select = GetModStatus(dynamicModType) == modIndex,
+            })
+        end
+        return
+    end
+
     if id == "Colors" then 
         SendNUIMessage({action = "emptyall"})
         for k, v in pairs(Config.ColorsType) do
@@ -312,66 +443,6 @@ RegisterNUICallback("SellectId", function (data)
                 select = select,
             })
         end
-    elseif id == "Suspension" then
-        for k, v in pairs(Config.Suspensions) do
-            select = false 
-            if v.mod == GetModStatus(15) or (GetModStatus(15) == -1 and v.mod == 0) then 
-                select = true
-            end
-            SendNUIMessage({
-                action = "addItems",
-                label = v.name,
-                img = Config.ModsList["Suspension"].img,
-                price = v.price,
-                id = k,
-                select = select,
-            })
-        end
-    elseif id == "Brakes" then 
-        for k, v in pairs(Config.Brakes) do
-            select = false 
-            if v.mod == GetModStatus(12) or (GetModStatus(12) == -1 and v.mod == 0) then 
-                select = true
-            end
-            SendNUIMessage({
-                action = "addItems",
-                label = v.name,
-                img = Config.ModsList["Brakes"].img,
-                price = v.price,
-                id = k,
-                select = select,
-            })
-        end
-    elseif id == "Engine" then 
-        for k, v in pairs(Config.Engine) do
-            select = false 
-            if v.mod == GetModStatus(11) or (GetModStatus(11) == 3 and v.mod == 0) or (GetModStatus(11) == -1 and v.mod == 0) then 
-                select = true
-            end
-            SendNUIMessage({
-                action = "addItems",
-                label = v.name,
-                img = Config.ModsList["Engine"].img,
-                price = v.price,
-                id = k,
-                select = select,
-            })
-        end
-    elseif id == "Transmission"  then
-        for k, v in pairs(Config.Transmission) do
-            select = false 
-            if v.mod == GetModStatus(13) or (GetModStatus(13) == -1 and v.mod == 0) then 
-                select = true
-            end
-            SendNUIMessage({
-                action = "addItems",
-                label = v.name,
-                img = Config.ModsList["Transmission"].img,
-                price = v.price,
-                id = k,
-                select = select,
-            })
-        end
     elseif id == "Wheels" then
         typer = "main"
         SendNUIMessage({action = "emptyall"})
@@ -439,40 +510,6 @@ RegisterNUICallback("SellectId", function (data)
                 id = k,
             })
         end
-    elseif Config.DetailMods[id] then
-        local playerPed = PlayerPedId()
-        local playerVeh = GetVehiclePedIsIn(playerPed, false)
-        local modCount = GetNumVehicleMods(playerVeh, Config.DetailMods[id].modtype)
-        for i = modCount, 0, -1 do
-            select = false 
-            if i == GetModStatus(Config.DetailMods[id].modtype) or (GetModStatus(Config.DetailMods[id].modtype) == -1 and i == modCount) then 
-                select = true
-            end
-            if i == modCount then
-            else
-                SendNUIMessage({
-                    action = "addItems",
-                    label = Config.ModsList[id].name.. " ".. i + 1,
-                    img = Config.ModsList[id].img,
-                    price = Config.DetailMods[id].startprice + (i * Config.DetailMods[id].increaseby),
-                    select = select,
-                    id = i,
-                })
-            end
-        end
-        select = false 
-        if modCount == GetModStatus(Config.DetailMods[id].modtype) or (GetModStatus(Config.DetailMods[id].modtype) == -1) then 
-            select = true
-        end
-            SendNUIMessage({
-                    action = "addItems",
-                    label = Config.ModsList[id].name.. " ".. Config.Langs["Stock"],
-                    img = Config.ModsList[id].img,
-                    price = Config.DetailMods[id].startprice + (modCount * Config.DetailMods[id].increaseby),
-                    select = select,
-                    id = modCount,
-                })
-        -- end
     end
 end)
 
@@ -503,6 +540,21 @@ RegisterNUICallback("SellectItem", function (data)
     repair = "no"
     if Config.SoundEffect then 
         PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", 1)
+    end
+    local dynamicModType = GetDynamicModeType(SellectMode)
+    if dynamicModType ~= nil then
+        SetVehicleModKit(playerVeh, 0)
+        if DynamicToggleMods[dynamicModType] then
+            local toggleState = tonumber(id) == 1
+            SellectItemPrice = GetDynamicPrice(dynamicModType, toggleState and 1 or 0, true)
+            ToggleVehicleMod(playerVeh, dynamicModType, toggleState)
+        else
+            local modIndex = tonumber(id) or -1
+            SellectItemPrice = GetDynamicPrice(dynamicModType, modIndex, false)
+            SetVehicleMod(playerVeh, dynamicModType, modIndex, false)
+        end
+        UpdatePrice()
+        return
     end
     if SellectMode == "MatteColors" or SellectMode == "MetalColors" or SellectMode == "ColorsC" then 
         if colorstyp == "PrimaryColor" then 
@@ -557,18 +609,6 @@ RegisterNUICallback("SellectItem", function (data)
     elseif SellectMode == "WindowTint" then
         SellectItemPrice = Config.Windowtint[tonumber(id)].price
         SetVehicleWindowTint(playerVeh, Config.Windowtint[tonumber(id)].tint)
-    elseif SellectMode == "Suspension" then 
-        SellectItemPrice = Config.Suspensions[tonumber(id)].price 
-        SetVehicleMod(playerVeh, 15, Config.Suspensions[tonumber(id)].mod)
-    elseif SellectMode == "Brakes" then 
-        SellectItemPrice = Config.Brakes[tonumber(id)].price 
-        SetVehicleMod(playerVeh, 12, Config.Brakes[tonumber(id)].mod)
-    elseif SellectMode == "Engine" then
-        SellectItemPrice = Config.Engine[tonumber(id)].price 
-        SetVehicleMod(playerVeh, 11, Config.Engine[tonumber(id)].mod)
-    elseif SellectMode == "Transmission" then
-        SellectItemPrice = Config.Transmission[tonumber(id)].price 
-        SetVehicleMod(playerVeh, 13, Config.Transmission[tonumber(id)].mod)
     elseif SellectMode == "wheelSmoke" then 
         SellectItemPrice = Config.Wheel.wheelaccessories[tonumber(id)].price 
         ToggleVehicleMod(playerVeh,20,true)
@@ -577,9 +617,6 @@ RegisterNUICallback("SellectItem", function (data)
         SellectItemPrice = Config.Wheel.Wheel[SellectMode][tonumber(id)].price 
         SetVehicleWheelType(playerVeh,Config.Wheel.Wheel[SellectMode][tonumber(id)].wtype)
         SetVehicleMod(playerVeh,23,Config.Wheel.Wheel[SellectMode][tonumber(id)].mod)
-    elseif Config.DetailMods[SellectMode] then 
-        SellectItemPrice = Config.DetailMods[SellectMode].startprice + (tonumber(id) * Config.DetailMods[SellectMode].increaseby)
-        SetVehicleMod(playerVeh, Config.DetailMods[SellectMode].modtype, tonumber(id))
     end
     UpdatePrice()
 end)
