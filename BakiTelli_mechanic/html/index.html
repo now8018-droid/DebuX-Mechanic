@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body style="display: none">
+    <div class="left-png"></div>
+    <div class="right-png"></div>
+    <div class="bottom-png"></div>
+    <div class="changecamera" onclick="changecamera()"></div>
+    <div class="top-section">
+      <div class="left-section">
+        <div class="l-top">
+          <div class="l-title">Tuning</div>
+          <div class="l-spell">atelier</div>
+        </div>
+        <div class="l-desc">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam lorem
+          tellus, porttitor eu auctor sit amet, dictum vel mauris.
+        </div>
+        <div class="l-items"></div>
+      </div>
+      <div class="right-section">
+        <div class="close-btn" onclick="closex()">
+          <div class="cb-blur"></div>
+          <div class="cb-title">CLOSE MENU</div>
+          <div class="cb-icon"><img src="./imgs/close.svg" /></div>
+        </div>
+        <div class="helper">
+          <div>
+            <span>Free Camera Mode</span><img src="./imgs/mouse1.svg" />
+          </div>
+          <div><span>Change Camera</span><img src="./imgs/mouse2.svg" /></div>
+        </div>
+        <div class="progresses">
+          <div id="speed_prog" class="progress" percent="68">
+            <div class="p-top">
+              <div class="p-title">SPEED</div>
+              <div class="p-value">
+                <div class="p-extra">+? KM/H</div>
+                <div class="p-val">100 KM/H</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+          <div id="brake_prog" class="progress" percent="17">
+            <div class="p-top">
+              <div class="p-title">BRAKE</div>
+              <div class="p-value">
+                <div class="p-val">100 KM/H</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+          <div id="torque_prog" class="progress" percent="25">
+            <div class="p-top">
+              <div class="p-title">TORQUE</div>
+              <div class="p-value">
+                <div class="p-val">100 KM/H</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+          <div id="power_prog" class="progress" percent="35">
+            <div class="p-top">
+              <div class="p-title">POWER</div>
+              <div class="p-value">
+                <div class="p-val">100 KM/H</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+          <div id="engine_prog" class="progress" percent="70">
+            <div class="p-top">
+              <div class="p-title">ENGINE HEALTH</div>
+              <div class="p-value">
+                <div class="p-val">100 KM/H</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+          <div id="fuel_prog" class="progress" percent="100">
+            <div class="p-top">
+              <div class="p-title">FUEL</div>
+              <div class="p-value">
+                <div class="p-val">100%</div>
+              </div>
+            </div>
+            <div class="p-bar">
+              <div class="p-percent"></div>
+            </div>
+          </div>
+        </div>
+        <div class="total-price">
+          <div class="tp-top">
+            <div class="tp-label">SELLECT ITEM PRICE :</div>
+            <div class="tp-price">$ 0</div>
+          </div>
+          <div class="tp-btn" onclick="BuyItem()">BUY ITEM</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-section">
+      <div class="b-items"></div>
+    </div>
+    <audio id="myAudio">
+      <source src="./drill.mp3" type="audio/mpeg" />
+    </audio>
+    <script src="nui://game/ui/jque ry.js" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="./js/script.js"></script>
+    <script src="./js/slider.js"></script>
+  </body>
+</html>
