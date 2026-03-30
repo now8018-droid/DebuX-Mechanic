@@ -98,10 +98,6 @@ end
 
 function ExecuteSql(query, params)
     local qParams = params or {}
-    if MySQL and MySQL.query and MySQL.query.await then
-        return MySQL.query.await(query, qParams)
-    end
-
     local IsBusy = true
     local result = nil
     exports.oxmysql:query(query, qParams, function(data)
