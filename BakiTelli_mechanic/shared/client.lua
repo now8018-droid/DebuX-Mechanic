@@ -47,7 +47,14 @@ function DrawText3D(x,y,z, text)
   end
 
   function notify(text)
-    ESX.ShowNotification(text)
+    if GetResourceState("esx_notify") == "started" then
+      ESX.ShowNotification(text)
+      return
+    end
+
+    BeginTextCommandThefeedPost("STRING")
+    AddTextComponentSubstringPlayerName(tostring(text))
+    EndTextCommandThefeedPostTicker(false, false)
   end
 
   function getfuel(vehicle)
