@@ -29,16 +29,27 @@ local DynamicToggleMods = {
     [22] = true, -- Xenon
 }
 
+local UpgradeModTypes = {11, 13, 12, 15, 18}
+
 local DynamicModMeta = {
-    [11] = { label = "Engine", category = "Performance", img = "./imgs/engine.png" },
-    [12] = { label = "Brakes", category = "Performance", img = "./imgs/brakes.png" },
-    [13] = { label = "Transmission", category = "Performance", img = "./imgs/transmission.png" },
-    [15] = { label = "Suspension", category = "Performance", img = "./imgs/suspension.png" },
-    [18] = { label = "Turbo", category = "Performance", img = "./imgs/engineblock.png" },
-    [22] = { label = "Xenon", category = "Body", img = "./imgs/frontbumper.png" },
-    [23] = { label = "Front Wheels", category = "Body", img = "./imgs/wheel.png" },
-    [24] = { label = "Back Wheels", category = "Body", img = "./imgs/wheel.png" },
+    [11] = { label = "Engine (เครื่องยนต์)", category = "Upgrade", img = "./imgs/engine.png" },
+    [12] = { label = "Brakes (เบรก)", category = "Upgrade", img = "./imgs/brakes.png" },
+    [13] = { label = "Transmission (เกียร์)", category = "Upgrade", img = "./imgs/transmission.png" },
+    [15] = { label = "Suspension (ความสูง)", category = "Upgrade", img = "./imgs/suspension.png" },
+    [18] = { label = "Turbo (เทอร์โบ)", category = "Upgrade", img = "./imgs/engineblock.png" },
+    [22] = { label = "Xenon", category = "Body Part", img = "./imgs/frontbumper.png" },
+    [23] = { label = "Front Wheels", category = "Body Part", img = "./imgs/wheel.png" },
+    [24] = { label = "Back Wheels", category = "Body Part", img = "./imgs/wheel.png" },
 }
+
+local function IsUpgradeMod(modType)
+    for _, upgradeModType in ipairs(UpgradeModTypes) do
+        if upgradeModType == modType then
+            return true
+        end
+    end
+    return false
+end
 
 local function GetDynamicModeType(modeId)
     if type(modeId) ~= "string" then
@@ -53,7 +64,7 @@ local function GetDynamicModDisplay(modType)
     if meta then
         return meta.label, meta.img, meta.category
     end
-    return ("Mod Type %d"):format(modType), "./imgs/repair.png", "Body"
+    return ("Mod Type %d"):format(modType), "./imgs/repair.png", "Body Part"
 end
 
 local function GetDynamicPrice(modType, modIndex, isToggle)
@@ -137,8 +148,8 @@ function AddMods()
         end
     end
 
-    -- Dynamic vehicle mods by native capability (mod types 0-49)
-    for modType = 0, 49 do
+    -- Upgrade category (requested fixed group ordering, but still native-detected availability)
+    for _, modType in ipairs(UpgradeModTypes) do
         local modCount = GetNumVehicleMods(playerVeh, modType)
         if modCount > 0 or DynamicToggleMods[modType] then
             local modLabel, modImg, modCategory = GetDynamicModDisplay(modType)
@@ -148,6 +159,22 @@ function AddMods()
                 img = modImg,
                 id = DynamicModPrefix .. modType,
             })
+        end
+    end
+
+    -- Body Part category (all remaining supported native mod types 0-49)
+    for modType = 0, 49 do
+        if not IsUpgradeMod(modType) then
+            local modCount = GetNumVehicleMods(playerVeh, modType)
+            if modCount > 0 or DynamicToggleMods[modType] then
+                local modLabel, modImg, modCategory = GetDynamicModDisplay(modType)
+                SendNUIMessage({
+                    action = "addMods",
+                    label = ("[%s] %s"):format(modCategory, modLabel),
+                    img = modImg,
+                    id = DynamicModPrefix .. modType,
+                })
+            end
         end
     end
 end
